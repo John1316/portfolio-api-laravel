@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Http\Controllers\str_random;
+use Illuminate\Support\Facades\Session;
+
 class ProjectController extends Controller
 {
     /**
@@ -34,23 +37,34 @@ class ProjectController extends Controller
      */
     public function store(Request $request)
     {
-        $project  = Project::create($request->all());
         // $project  =  new Project;
-        if ($request->hasFile('image')) {
-            $completeFileName = $request->file('image')->getClientOriginalName();
-            $fileNameOnly = pathinfo($completeFileName , PATHINFO_FILENAME);
-            $extension = $request->file('image')->getClientOriginalExtension();
-            $comPic = str_replace(' ' , '_',$fileNameOnly).'_'.rand() . '_'.time(). '.'.$extension;
-            $path = $request->file('image')->storeAs('public/projects' , $comPic);
-            // dd($path);
-            $project->image = $comPic;
+        try {
+            //code...
 
-        }
-        if ($project->save()) {
-            return response()->json(['status' => true , 'message' => 'Project posted successfully', 'project_details' => $project] , 200);
-        }else{
+            if($request->hasFile('image')) {
+                $file = $request->file('image');
+                $fileName =  time().'.'.$file->getClientOriginalExtension();
+                $file->move(public_path('projects'), $fileName);
+            }
+
+            Project::create([
+                'name' => $request->name,
+                'description' =>$request->description,
+                'link' =>$request->link,
+                'image' =>$request->hasFile('image') ? $fileName : $request->image,
+            ]);
+
+                $project = Project::get();
+
+                return response()->json(['status' => true , 'message' => 'Project posted successfully'
+                ] , 200);
+        } catch (\Throwable $th) {
+            //throw $th;
             return response()->json(['status' => false , 'message' => 'Project went wrong' ] ,400 );
         }
+
+
+
         // return response()->json($project, 201);
     }
 
